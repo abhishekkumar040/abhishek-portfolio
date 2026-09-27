@@ -1,17 +1,12 @@
 import { useState, useEffect } from 'react';
 
-// Primary & High-availability Fallback Audio Streams (Metro Boomin / Trap Instrumental Vibe)
-const AUDIO_SOURCES = [
-  'https://cdn.pixabay.com/download/audio/2022/11/06/audio_27d759d5b7.mp3',
-  'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3',
-  'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c800b65a.mp3',
-  'https://upload.wikimedia.org/wikipedia/commons/2/23/Trap_Beat_Instrumental.ogg',
-];
+// Local background track (served from /public/audio) -- reliable, no external
+// dependency, and no CORS/CDN failure risk like remote stock audio URLs had.
+const AUDIO_SRC = '/audio/background-music.mp3';
 
 class BackgroundMusicManager {
   private audio: HTMLAudioElement | null = null;
   private isPlaying = false;
-  private currentSourceIndex = 0;
   private listeners: Set<(playing: boolean) => void> = new Set();
   private hasInitialized = false;
 
@@ -19,11 +14,17 @@ class BackgroundMusicManager {
     if (this.hasInitialized || typeof window === 'undefined') return;
     this.hasInitialized = true;
 
-    this.createAudioInstance(this.currentSourceIndex);
+    this.createAudioInstance();
 
-    // Global listeners for instant unlock on first user gesture or entry
+    // Most browsers block audio-with-sound autoplay until the user has
+    // interacted with the page at least once. We attempt to play
+    // immediately (works in some browsers/contexts), and if that's
+    // blocked, we transparently start playback on the very first
+    // interaction of any kind -- click, tap, scroll, key press, or even
+    // mouse movement -- so entering the site still feels like "autoplay"
+    // from the user's perspective.
     const unlockAutoplay = () => {
-      if (this.audio) {
+      if (this.audio && !this.isPlaying) {
         this.audio.play().then(() => {
           this.setPlaying(true);
         }).catch(() => {});
@@ -38,37 +39,23 @@ class BackgroundMusicManager {
     window.addEventListener('keydown', unlockAutoplay, options);
   }
 
-  private createAudioInstance(index: number) {
-    if (index >= AUDIO_SOURCES.length) return;
-
-    if (this.audio) {
-      this.audio.pause();
-      this.audio.src = '';
-    }
-
-    const audio = new Audio(AUDIO_SOURCES[index]);
+  private createAudioInstance() {
+    const audio = new Audio(AUDIO_SRC);
     audio.loop = true;
     audio.volume = 0.35;
-    audio.crossOrigin = 'anonymous';
+    audio.preload = 'auto';
 
     audio.onerror = () => {
-      console.warn(`Audio stream ${index} failed to load, attempting fallback...`);
-      if (index + 1 < AUDIO_SOURCES.length) {
-        this.currentSourceIndex = index + 1;
-        this.createAudioInstance(this.currentSourceIndex);
-        if (this.isPlaying) {
-          this.audio?.play().catch(() => {});
-        }
-      }
+      console.warn('Background music failed to load.');
     };
 
     this.audio = audio;
 
-    // Try immediate playback
+    // Try immediate playback (succeeds in some browsers/contexts,
+    // otherwise the interaction-unlock listeners above take over).
     audio.play().then(() => {
       this.setPlaying(true);
     }).catch(() => {
-      // Browser autoplay restriction
       this.setPlaying(false);
     });
   }
@@ -87,12 +74,6 @@ class BackgroundMusicManager {
         this.setPlaying(true);
       }).catch((err) => {
         console.warn('Playback error:', err);
-        // Try fallback source if play failed
-        if (this.currentSourceIndex + 1 < AUDIO_SOURCES.length) {
-          this.currentSourceIndex++;
-          this.createAudioInstance(this.currentSourceIndex);
-          this.audio?.play().then(() => this.setPlaying(true)).catch(() => {});
-        }
       });
     }
   }
