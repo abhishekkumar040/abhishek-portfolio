@@ -17,6 +17,7 @@ import { CustomCursor } from './ui/CustomCursor';
 import { SEOHead } from './components/SEOHead';
 import { GeminiChatbot } from './components/GeminiChatbot';
 import { BackToTop } from './components/BackToTop';
+import { RightStickyNav } from './components/RightStickyNav';
 
 function PortfolioLanding() {
   const [isContactOpen, setIsContactOpen] = useState(false);
@@ -69,6 +70,9 @@ function PortfolioLanding() {
       {/* Slim, fixed scroll progress indicator at the top of the viewport */}
       <ScrollProgressBar />
 
+      {/* Right side smooth-scrolling sticky document navigation bar */}
+      <RightStickyNav />
+
       {/* Subtle page-wide crossfade animation layer on theme switch */}
       <AnimatePresence mode="wait">
         {!isFirstMount.current && (
@@ -113,6 +117,9 @@ function PortfolioLanding() {
 
       {/* Floating Gemini AI Chatbot with Google Search Grounding */}
       <GeminiChatbot />
+
+      {/* Right Sticky Section Navigation Bar */}
+      <RightStickyNav />
 
       {/* Floating Back to Top Action Button */}
       <BackToTop />

@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowUp, Instagram, Github, Linkedin, Mail } from 'lucide-react';
 import { PROFILE_INFO, NAV_ITEMS } from '../data/portfolioData';
+import { SoundToggle } from './SoundToggle';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -18,6 +19,7 @@ export const Footer: React.FC<FooterProps> = ({ onContactClick }) => {
 
   return (
     <footer
+      id="contact"
       className={`w-full px-6 md:px-12 py-12 md:py-16 z-10 relative transition-colors duration-300 border-t ${
         isDark
           ? 'bg-[#0C0C0C] border-[#D7E2EA]/10 text-[#D7E2EA]'
@@ -85,6 +87,7 @@ export const Footer: React.FC<FooterProps> = ({ onContactClick }) => {
 
         {/* Social Icons & Back to Top */}
         <div className="flex items-center gap-2">
+          <SoundToggle />
           <a
             href={PROFILE_INFO.instagram}
             target="_blank"

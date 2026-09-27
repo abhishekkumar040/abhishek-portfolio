@@ -1,10 +1,10 @@
-import React, { useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useRef } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { Navbar } from './Navbar';
+import { HeroPortraitWithEffects } from './HeroPortraitWithEffects';
 import { ContactButton } from '../ui/ContactButton';
-import { Magnet } from '../ui/Magnet';
 import { PROFILE_INFO } from '../data/portfolioData';
-import { Camera, Github, Linkedin } from 'lucide-react';
+import { Github, Linkedin } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -14,25 +14,32 @@ interface HeroSectionProps {
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ onContactClick }) => {
   const [portraitImage, setPortraitImage] = useState<string>(PROFILE_INFO.heroPortraitImage);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { isDark } = useTheme();
   const { t } = useLanguage();
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setPortraitImage(event.target.result as string);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  // Parallax Scroll Tracking
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start start', 'end start'],
+  });
+
+  // Layer 1: Giant Heading Typography moves slower (descends gently with slight fade out)
+  const headingY = useTransform(scrollYProgress, [0, 1], ['0px', '160px']);
+  const headingOpacity = useTransform(scrollYProgress, [0, 0.75], [1, 0.2]);
+
+  // Layer 2: Hero Portrait moves at medium parallax speed with subtle depth scale contraction
+  const portraitY = useTransform(scrollYProgress, [0, 1], ['0px', '70px']);
+  const portraitScale = useTransform(scrollYProgress, [0, 1], [1, 0.93]);
+
+  // Layer 3: Bottom Controls & Text float upward faster with soft opacity fade out
+  const bottomBarY = useTransform(scrollYProgress, [0, 1], ['0px', '-50px']);
+  const bottomBarOpacity = useTransform(scrollYProgress, [0, 0.65], [1, 0]);
 
   return (
     <section
+      ref={sectionRef}
       id="hero"
       className={`relative w-full h-screen min-h-[680px] flex flex-col justify-between overflow-x-clip transition-colors duration-300 ${
         isDark ? 'bg-[#0C0C0C]' : 'bg-[#FAFAFC]'
@@ -41,8 +48,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onContactClick }) => {
       {/* 1. Navbar */}
       <Navbar onContactClick={onContactClick} />
 
-      {/* 2. Hero Heading */}
-      <div className="w-full overflow-hidden z-0 select-none pointer-events-none mt-6 sm:mt-4 md:-mt-5">
+      {/* 2. Hero Heading (Background Typography Parallax Layer) */}
+      <motion.div
+        style={{ y: headingY, opacity: headingOpacity }}
+        className="w-full overflow-hidden z-0 select-none pointer-events-none mt-6 sm:mt-4 md:-mt-5"
+      >
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
@@ -53,64 +63,27 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onContactClick }) => {
             {t.hero.heading}
           </h1>
         </motion.div>
-      </div>
+      </motion.div>
 
-      {/* 3. Hero Portrait with Magnet Mouse-Following Effect */}
+      {/* 3. Hero Portrait with Interactive Effects (Mid-ground Parallax Layer) */}
       <motion.div
+        style={{ y: portraitY, scale: portraitScale }}
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, delay: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-        className="absolute left-1/2 -translate-x-1/2 z-10 w-[280px] sm:w-[360px] md:w-[440px] lg:w-[520px] top-1/2 -translate-y-1/2 sm:top-auto sm:translate-y-0 sm:bottom-0 pointer-events-auto"
+        className="absolute left-1/2 -translate-x-1/2 z-10 w-[300px] sm:w-[380px] md:w-[460px] lg:w-[540px] top-1/2 -translate-y-1/2 sm:top-auto sm:translate-y-0 sm:bottom-0 pointer-events-auto"
       >
-        <Magnet
-          padding={150}
-          strength={3}
-          activeTransition="transform 0.3s ease-out"
-          inactiveTransition="transform 0.6s ease-in-out"
-          className="w-full flex justify-center group relative"
-        >
-          <div className="relative w-full">
-            <img
-              src={portraitImage}
-              alt="Abhishek - Developer and Content Creator"
-              className={`w-full h-auto max-h-[72vh] object-contain object-bottom select-none pointer-events-none transition-all duration-300 ${
-                isDark
-                  ? 'drop-shadow-[0_20px_45px_rgba(0,0,0,0.9)]'
-                  : 'drop-shadow-[0_20px_35px_rgba(0,0,0,0.25)]'
-              }`}
-              loading="eager"
-            />
-            {/* Subtle bottom atmospheric blend overlay into current background */}
-            <div
-              className={`absolute inset-x-0 bottom-0 h-16 pointer-events-none transition-colors duration-300 ${
-                isDark
-                  ? 'bg-gradient-to-t from-[#0C0C0C] to-transparent'
-                  : 'bg-gradient-to-t from-[#FAFAFC] to-transparent'
-              }`}
-            />
-
-            {/* Quick-swap photo button */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              title="Replace with your own portrait photo (PNG/JPG)"
-              className="absolute bottom-4 right-4 bg-[#18011F]/80 hover:bg-[#7621B0] text-white p-2 rounded-full border border-white/20 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg cursor-pointer"
-            >
-              <Camera className="w-4 h-4" />
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageUpload}
-            />
-          </div>
-        </Magnet>
+        <HeroPortraitWithEffects
+          portraitImage={portraitImage}
+          onImageChange={(newImg) => setPortraitImage(newImg)}
+        />
       </motion.div>
 
-      {/* 4. Bottom Bar */}
-      <div className="w-full flex justify-between items-end px-6 md:px-10 pb-7 sm:pb-8 md:pb-10 z-20">
+      {/* 4. Bottom Bar (Foreground Parallax Layer) */}
+      <motion.div
+        style={{ y: bottomBarY, opacity: bottomBarOpacity }}
+        className="w-full flex justify-between items-end px-6 md:px-10 pb-7 sm:pb-8 md:pb-10 z-20"
+      >
         {/* Left text & quick socials */}
         <div className="flex flex-col gap-2.5 max-w-[170px] sm:max-w-[230px] md:max-w-[270px]">
           <motion.p
@@ -169,7 +142,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onContactClick }) => {
         >
           <ContactButton onClick={onContactClick} label={t.hero.contactBtn} />
         </motion.div>
-      </div>
+      </motion.div>
     </section>
   );
 };
