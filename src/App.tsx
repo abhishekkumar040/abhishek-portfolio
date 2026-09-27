@@ -18,6 +18,7 @@ import { SEOHead } from './components/SEOHead';
 import { GeminiChatbot } from './components/GeminiChatbot';
 import { BackToTop } from './components/BackToTop';
 import { RightStickyNav } from './components/RightStickyNav';
+import { MusicToggle } from './components/MusicToggle';
 
 function PortfolioLanding() {
   const [isContactOpen, setIsContactOpen] = useState(false);
@@ -72,6 +73,9 @@ function PortfolioLanding() {
 
       {/* Right side smooth-scrolling sticky document navigation bar */}
       <RightStickyNav />
+
+      {/* Floating glass background-music toggle (autoplays on entry) */}
+      <MusicToggle />
 
       {/* Subtle page-wide crossfade animation layer on theme switch */}
       <AnimatePresence mode="wait">
